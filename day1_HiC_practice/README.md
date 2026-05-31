@@ -1,10 +1,8 @@
-# День 1. Hi-C: подготовка ридов и получение `.hic`
-
-Курс: методы анализа данных структурно-функциональной организации хроматина.
+# 04.06. Hi-C: подготовка ридов и получение `.hic` файлов
 
 Эта папка содержит материалы первого практического дня. Мы разберем базовый путь от
 сырых paired-end Hi-C ридов до файла `.hic`, который можно открыть в Juicebox и
-использовать дальше для анализа контактных карт.
+использовать дальше для анализа карт контактов.
 
 ## Что будет сделано
 
@@ -19,20 +17,19 @@
    - запуск пайплайна Juicer на локальных данных;
    - проверка результата `.hic`.
 
-Дальше на курсе мы будем работать с более глубокой готовой Hi-C картой и ноутбуками
+<!-- Дальше на курсе мы будем работать с более глубокой готовой Hi-C картой и ноутбуками
 на основе материалов из репозитория:
-<https://github.com/dpanc2/BI_HiC_analysis>
+<https://github.com/dpanc2/BI_HiC_analysis> -->
 
 ## Требования
 
-Практика рассчитана на локальный компьютер. Команды ниже предполагают macOS или Linux
+Работаем локально на ноутбуке. Команды ниже предполагают macOS или Linux
 и установленный `conda`/`mamba`.
 
 Нужные инструменты:
 
 - `fastqc`
 - `cutadapt`
-- `multiqc` опционально, но удобно для сводного отчета
 - `bwa`
 - `samtools`
 - Java 8 или новее
@@ -42,7 +39,7 @@
 
 ```bash
 conda create -n hic_practice -c conda-forge -c bioconda \
-  fastqc cutadapt multiqc bwa samtools openjdk=11 wget
+  fastqc cutadapt bwa samtools openjdk=11 wget
 conda activate hic_practice
 ```
 
@@ -56,34 +53,7 @@ samtools --version
 java -version
 ```
 
-## Структура проекта
-
-```text
-OMICS_course_spring_2026/day01_2026-06-09_HiC_practice/
-├── README.md
-├── data/
-│   ├── raw/
-│   ├── trimmed/
-│   ├── reference/
-│   └── juicer/
-├── results/
-│   ├── fastqc_raw/
-│   ├── fastqc_trimmed/
-│   └── hic/
-├── notebooks/
-├── scripts/
-└── tools/
-```
-
-Если папки создаются вручную, используйте:
-
-```bash
-mkdir -p data/raw data/trimmed data/reference data/juicer
-mkdir -p results/fastqc_raw results/fastqc_trimmed results/hic
-mkdir -p notebooks scripts tools
-```
-
-## Шаг 1. Скачать сырые риды
+## Шаг 1. Скачиваем сырые риды
 
 В этой практике используются paired-end риды:
 
@@ -117,12 +87,6 @@ fastqc \
   -o results/fastqc_raw
 ```
 
-Опционально можно собрать общий отчет MultiQC:
-
-```bash
-multiqc results/fastqc_raw -o results/fastqc_raw
-```
-
 Что посмотреть в отчете:
 
 - качество по позициям рида;
@@ -140,7 +104,8 @@ multiqc results/fastqc_raw -o results/fastqc_raw
 ```bash
 cutadapt \
   -q 20 \
-  -m 20 \
+  -m 70 \
+  -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA \
   -o data/trimmed/MoPh7_R1.trimmed.fastq.gz \
   -p data/trimmed/MoPh7_R2.trimmed.fastq.gz \
   data/raw/MoPh7_R1.fastq.gz \
@@ -150,34 +115,11 @@ cutadapt \
 Параметры:
 
 - `-q 20` обрезает концы ридов с качеством ниже Q20;
-- `-m 20` удаляет пары, где хотя бы один рид после обрезки стал короче 20 нуклеотидов;
+- `-m 20` удаляет пары, где хотя бы один рид после обрезки стал короче 70 нуклеотидов;
+- `-a` обрезать адаптер Illumina;
 - `-o` задает файл для первого рида;
 - `-p` задает файл для второго рида.
 
-Если FastQC показал конкретные адаптеры, их можно указать явно:
-
-```bash
-cutadapt \
-  -a ADAPTER_FOR_R1 \
-  -A ADAPTER_FOR_R2 \
-  -q 20 \
-  -m 20 \
-  -o data/trimmed/MoPh7_R1.trimmed.fastq.gz \
-  -p data/trimmed/MoPh7_R2.trimmed.fastq.gz \
-  data/raw/MoPh7_R1.fastq.gz \
-  data/raw/MoPh7_R2.fastq.gz
-```
-
-После обрезки снова запускаем FastQC:
-
-```bash
-fastqc \
-  data/trimmed/MoPh7_R1.trimmed.fastq.gz \
-  data/trimmed/MoPh7_R2.trimmed.fastq.gz \
-  -o results/fastqc_trimmed
-
-multiqc results/fastqc_trimmed -o results/fastqc_trimmed
-```
 
 ## Шаг 4. Установка Juicer tools
 
@@ -209,22 +151,17 @@ java -jar tools/juicer_tools.jar
 - файл размеров хромосом;
 - файл сайтов рестрикции для выбранного фермента.
 
-На занятии важно обсудить, что Hi-C библиотека зависит от протокола и фермента
-рестрикции. Для Juicer это не техническая мелочь, а часть модели эксперимента.
-
-Пример для небольшого учебного референса:
+Работаем с T2T референсом человека:
 
 ```bash
 # FASTA кладем в data/reference/genome.fa
-bwa index data/reference/genome.fa
+wget -O data/references/T2T_human.fna https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna.gz 
 
-samtools faidx data/reference/genome.fa
-cut -f1,2 data/reference/genome.fa.fai > data/reference/chrom.sizes
+bwa index data/references/T2T_human.fna
+
+samtools faidx data/references/T2T_human.fna
+cut -f1,2 data/references/T2T_human.fna.fai > data/references/chrom.sizes
 ```
-
-Файл сайтов рестрикции обычно готовится скриптами из Juicer. В реальном анализе нужно
-выбрать фермент, которым была приготовлена библиотека, например `MboI`, `DpnII`,
-`HindIII`.
 
 ## Шаг 6. Подготовить структуру для Juicer
 
@@ -252,6 +189,25 @@ git clone https://github.com/aidenlab/juicer.git tools/juicer
 tools/juicer/CPU/juicer.sh
 ```
 
+Файл сайтов рестрикции обычно готовится скриптами из Juicer. В реальном анализе нужно
+выбрать фермент, которым была приготовлена библиотека, например `MboI`, `DpnII`,
+`HindIII`. В нашем случае мы используем фермент `DpnII`
+
+Сгенерируем файл позиций сайтов рестрикции для T2T-референса:
+
+```bash
+python tools/juicer/misc/generate_site_positions.py \
+  DpnII \
+  T2T_human \
+  data/references/T2T_human.fna
+
+mv T2T_human_DpnII.txt data/references/restriction_sites_DpnII.txt
+```
+
+Скрипт принимает три аргумента: название фермента, короткое имя генома и FASTA-файл.
+На выходе он создает файл формата `<genome>_<enzyme>.txt`, который передается в
+Juicer через параметр `-y`.
+
 ## Шаг 7. Запуск Juicer
 
 Пример команды для локального CPU-запуска:
@@ -259,10 +215,10 @@ tools/juicer/CPU/juicer.sh
 ```bash
 bash tools/juicer/CPU/juicer.sh \
   -d data/juicer/MoPh7 \
-  -z data/reference/genome.fa \
-  -p data/reference/chrom.sizes \
-  -y data/reference/restriction_sites.txt \
-  -s MboI \
+  -z data/references/T2T_human.fna \
+  -p data/references/chrom.sizes \
+  -y data/references/restriction_sites_DpnII.txt \
+  -s DpnII \
   -t 4
 ```
 
@@ -280,20 +236,6 @@ bash tools/juicer/CPU/juicer.sh \
 
 ```text
 data/juicer/MoPh7/aligned/inter.hic
-```
-
-Скопируем результат в общую папку:
-
-```bash
-cp data/juicer/MoPh7/aligned/inter.hic results/hic/MoPh7.inter.hic
-```
-
-Проверка:
-
-```bash
-ls -lh results/hic/
-java -jar tools/juicer_tools.jar dump observed NONE \
-  results/hic/MoPh7.inter.hic 1 1 BP 1000000 | head
 ```
 
 ## Шаг 8. Установка Juicebox для визуализации
