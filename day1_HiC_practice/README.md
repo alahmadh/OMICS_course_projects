@@ -16,10 +16,6 @@
    - запуск пайплайна Juicer на локальных данных;
    - проверка результата `.hic`.
 
-<!-- Дальше на курсе мы будем работать с более глубокой готовой Hi-C картой и ноутбуками
-на основе материалов из репозитория:
-<https://github.com/dpanc2/BI_HiC_analysis> -->
-
 ## Требования
 
 Работаем локально на ноутбуке. Команды ниже предполагают macOS или Linux
@@ -31,6 +27,9 @@
 - `cutadapt`
 - `bwa`
 - `samtools`
+- `hic2cool`
+- `cooler`
+- `cooltools`
 - Java 8 или новее
 - Juicer tools
 
@@ -38,7 +37,7 @@
 
 ```bash
 conda create -n hic_practice -c conda-forge -c bioconda \
-  fastqc cutadapt bwa samtools openjdk=11 wget
+  fastqc cutadapt bwa samtools hic2cool cooler cooltools openjdk=11 wget
 conda activate hic_practice
 ```
 
@@ -49,6 +48,8 @@ fastqc --version
 cutadapt --version
 bwa 2>&1 | head
 samtools --version
+python -m hic2cool --help
+cooler --version
 java -version
 ```
 
@@ -237,7 +238,50 @@ bash tools/juicer/CPU/juicer.sh \
 data/juicer/MoPh7/aligned/inter.hic
 ```
 
-## Шаг 8. Установка Juicebox для визуализации
+Сохраним его в общей папке результатов:
+
+```bash
+mkdir -p results/hic
+cp data/juicer/MoPh7/aligned/inter.hic results/hic/MoPh7.inter.hic
+```
+
+## Шаг 8. Конвертация `.hic` в `.mcool` и балансировка
+
+Juicebox работает с `.hic`, а библиотеки `cooler` и `cooltools` работают с форматами
+`.cool` и `.mcool`. Поэтому после Juicer конвертируем карту в multi-resolution cooler:
+
+```bash
+python -m hic2cool convert \
+  results/hic/MoPh7.inter.hic \
+  data/MoPh7.inter.mcool \
+  -r 0
+```
+
+Параметр `-r 0` означает, что `hic2cool` сохранит все доступные разрешения из `.hic`
+в один multi-resolution файл `.mcool`.
+
+Проверим, какие разрешения появились:
+
+```bash
+cooler ls data/MoPh7.inter.mcool
+```
+
+Для анализа в `cooltools` нужна сбалансированная матрица, то есть в cooler-файле
+должна появиться колонка `weight`. Сбалансируем все разрешения внутри `.mcool`:
+
+```bash
+while read uri; do
+  cooler balance --force "$uri"
+done < <(cooler ls data/MoPh7.inter.mcool)
+```
+
+Проверим одно разрешение:
+
+```bash
+cooler info data/MoPh7.inter.mcool::/resolutions/1000000
+```
+
+## Шаг 9. Установка Juicebox для визуализации
 
 Juicebox нужен для интерактивного просмотра `.hic` карт.
 
