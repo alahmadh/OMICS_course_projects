@@ -100,17 +100,25 @@ cut -f1,2 data/reference/T2T_human.fna.fai > data/reference/chrom.sizes
 
 ## Шаг 2. Установка Juicer
 
-Официальный репозиторий Juicer:  
+Официальный репозиторий Juicer:
 [https://github.com/aidenlab/juicer](https://github.com/aidenlab/juicer)
 
+Для практики используем зафиксированную версию Juicer, которая уже проверена для
+этого занятия и содержит нужный `juicer_tools.jar`:
+
 ```bash
-git clone https://github.com/aidenlab/juicer.git tools/juicer
+git clone \
+  --branch juicer_course_version \
+  --single-branch \
+  https://github.com/dpanc2/OMICS_course_spring_2026.git \
+  tools/juicer
 ```
 
 Проверка:
 
 ```bash
-ls tools/juicer/CPU/juicer.sh
+ls tools/juicer/scripts/juicer.sh
+ls tools/juicer/scripts/common/juicer_tools.jar
 ls tools/juicer/misc/generate_site_positions.py
 ```
 
@@ -215,10 +223,10 @@ Juicer ожидает определенную структуру директо
 ```bash
 mkdir -p data/juicer/MoPh7/fastq
 
-ln -s data/trimmed/MoPh7_R1.trimmed.fastq.gz" \
+ln -sf "$(pwd)/data/trimmed/MoPh7_R1.trimmed.fastq.gz" \
   data/juicer/MoPh7/fastq/MoPh7_R1.fastq.gz
 
-ln -s data/trimmed/MoPh7_R2.trimmed.fastq.gz" \
+ln -sf "$(pwd)/data/trimmed/MoPh7_R2.trimmed.fastq.gz" \
   data/juicer/MoPh7/fastq/MoPh7_R2.fastq.gz
 ```
 
@@ -233,11 +241,13 @@ ls -lh data/juicer/MoPh7/fastq/
 Пример команды для локального CPU-запуска:
 
 ```bash
-bash tools/juicer/CPU/juicer.sh \
-  -d data/juicer/MoPh7 \
-  -z data/reference/T2T_human.fna \
-  -p data/reference/chrom.sizes \
-  -y data/reference/restriction_sites_DpnII.txt \
+bash tools/juicer/scripts/juicer.sh \
+  -D "$(pwd)/tools/juicer" \
+  -d "$(pwd)/data/juicer/MoPh7" \
+  -g T2T_human \
+  -z "$(pwd)/data/reference/T2T_human.fna" \
+  -p "$(pwd)/data/reference/chrom.sizes" \
+  -y "$(pwd)/data/reference/restriction_sites_DpnII.txt" \
   -s DpnII \
   -t 4
 ```
@@ -245,6 +255,8 @@ bash tools/juicer/CPU/juicer.sh \
 Параметры:
 
 - `-d` директория эксперимента Juicer;
+- `-D` директория, где установлен Juicer;
+- `-g` короткое имя генома;
 - `-z` FASTA референсного генома;
 - `-p` размеры хромосом;
 - `-y` файл сайтов рестрикции;
@@ -288,7 +300,7 @@ java -jar tools/Juicebox.jar
 В Juicebox:
 
 1. `File` -> `Open`;
-2. выбрать `results/hic/MoPh7.inter.hic`;
+2. выбрать `results/hic/MoPh7.inter_30.hic`;
 3. выбрать хромосому или весь геном;
 4. менять разрешение карты;
 5. сравнить вид сырой и нормализованной матрицы, если нормализация доступна.
@@ -351,4 +363,3 @@ results/hic/MoPh15.inter_30.hic
 - на каких хромосомах они заметны;
 - какие дополнительные проверки нужны, чтобы убедиться, что это не артефакт
 покрытия, качества ридов или выравнивания.
-
