@@ -6,20 +6,20 @@
 ## План
 
 1. Подготовка референсного генома:
-   - скачивание FASTA;
-   - распаковка `.fna.gz`;
-   - индексация `bwa`;
-   - создание `chrom.sizes`;
-   - создание файла сайтов рестрикции для Juicer.
+  - скачивание FASTA;
+  - распаковка `.fna.gz`;
+  - индексация `bwa`;
+  - создание `chrom.sizes`;
+  - создание файла сайтов рестрикции для Juicer.
 2. Подготовка ридов к выравниванию:
-   - скачивание FASTQ;
-   - первичный контроль качества через FastQC;
-   - обрезка адаптеров и низкокачественных хвостов через cutadapt.
+  - скачивание FASTQ;
+  - первичный контроль качества через FastQC;
+  - обрезка адаптеров и низкокачественных хвостов через cutadapt.
 3. Получение Hi-C карты через Juicer:
-   - установка Juicer;
-   - подготовка структуры директорий;
-   - запуск пайплайна Juicer;
-   - получение `.hic`.
+  - установка Juicer;
+  - подготовка структуры директорий;
+  - запуск пайплайна Juicer;
+  - получение `.hic`.
 
 ## Требования
 
@@ -66,23 +66,18 @@ mkdir -p tools
 
 ## Шаг 1. Референсный геном
 
-Начнем с референса, потому что скачивание и индексация генома занимают больше всего
-времени.
+Начнем с референса, потому что скачивание и индексация генома занимают больше всего  
+времени
 
 Для запуска Juicer нам нужны:
 
-- FASTA референсного генома;
-- индекс `bwa`;
-- файл размеров хромосом `chrom.sizes`;
+- fasta референсного генома;
+- индекс `bwa`
+- файл размеров хромосом `chrom.sizes`
 - файл сайтов рестрикции для выбранного фермента.
 
-В качестве референса берем T2T геном человека. На сервере NCBI файл лежит в gzip
-формате, поэтому скачиваем его как `.fna.gz`, а затем распаковываем рабочую копию
-`.fna`.
-
 ```bash
-wget --no-check-certificate \
-  -O data/reference/T2T_human.fna.gz \
+wget -O data/reference/T2T_human.fna.gz \
   https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna.gz
 
 gzip -dkf data/reference/T2T_human.fna.gz
@@ -105,15 +100,11 @@ cut -f1,2 data/reference/T2T_human.fna.fai > data/reference/chrom.sizes
 
 ## Шаг 2. Установка Juicer
 
-Официальный репозиторий Juicer:
+Официальный репозиторий Juicer:  
 [https://github.com/aidenlab/juicer](https://github.com/aidenlab/juicer)
 
-Скачаем Juicer целиком в папку `tools/`:
-
 ```bash
-if [ ! -d tools/juicer ]; then
-  git clone https://github.com/aidenlab/juicer.git tools/juicer
-fi
+git clone https://github.com/aidenlab/juicer.git tools/juicer
 ```
 
 Проверка:
@@ -123,17 +114,11 @@ ls tools/juicer/CPU/juicer.sh
 ls tools/juicer/misc/generate_site_positions.py
 ```
 
-Если команды показывают пути к `juicer.sh` и `generate_site_positions.py`, установка
-прошла успешно.
-
 ## Шаг 3. Файл сайтов рестрикции
 
-Файл сайтов рестрикции готовится скриптом из Juicer. В реальном анализе нужно выбрать
-фермент, которым была приготовлена библиотека, например `MboI`, `DpnII`, `HindIII`.
-В нашем случае используем фермент `DpnII`.
-
-Для скрипта нужен распакованный FASTA, поэтому используем `data/reference/T2T_human.fna`,
-а не `.fna.gz`.
+Файл сайтов рестрикции готовится скриптом из Juicer. В реальном анализе нужно выбрать  
+фермент, которым была приготовлена библиотека, например `MboI`, `DpnII`, `HindIII`.  
+В нашем случае используем фермент `DpnII`
 
 ```bash
 python3 tools/juicer/misc/generate_site_positions.py \
@@ -187,16 +172,15 @@ fastqc \
 
 Что посмотреть в отчете:
 
-- качество по позициям рида;
-- наличие адаптеров;
-- overrepresented sequences;
-- распределение GC;
-- длину ридов.
+- качество по позициям рида
+- наличие адаптеров
+- overrepresented sequences
+- распределение GC
+- длину ридов
 
 ## Шаг 6. Обрезка адаптеров и низкокачественных концов cutadapt
 
-Для paired-end данных запускаем `cutadapt` сразу на двух FASTQ. Отчет `cutadapt`
-сохраним в отдельный log-файл.
+Для paired-end данных запускаем `cutadapt` сразу на двух fastq
 
 ```bash
 cutadapt \
@@ -231,10 +215,10 @@ Juicer ожидает определенную структуру директо
 ```bash
 mkdir -p data/juicer/MoPh7/fastq
 
-ln -s "$(pwd)/data/trimmed/MoPh7_R1.trimmed.fastq.gz" \
+ln -s data/trimmed/MoPh7_R1.trimmed.fastq.gz" \
   data/juicer/MoPh7/fastq/MoPh7_R1.fastq.gz
 
-ln -s "$(pwd)/data/trimmed/MoPh7_R2.trimmed.fastq.gz" \
+ln -s data/trimmed/MoPh7_R2.trimmed.fastq.gz" \
   data/juicer/MoPh7/fastq/MoPh7_R2.fastq.gz
 ```
 
@@ -271,13 +255,13 @@ bash tools/juicer/CPU/juicer.sh \
 эксперимента:
 
 ```text
-data/juicer/MoPh7/aligned/inter.hic
+data/juicer/MoPh7/aligned/inter_30.hic
 ```
 
 Сохраним его в общей папке результатов:
 
 ```bash
-cp data/juicer/MoPh7/aligned/inter.hic results/hic/MoPh7.inter.hic
+cp data/juicer/MoPh7/aligned/inter_30.hic results/hic/MoPh7.inter_30.hic
 ```
 
 ## Шаг 9. Установка Juicebox для визуализации
@@ -324,11 +308,13 @@ https://genedev.bionet.nsc.ru/ftp/_RawReads/2025-05-23MyGenetics/
 
 Для самостоятельной обработки используйте три дополнительных образца:
 
-| Образец | R1 | R2 |
-| --- | --- | --- |
+
+| Образец  | R1                                        | R2                                        |
+| -------- | ----------------------------------------- | ----------------------------------------- |
 | `MoPh11` | `Copy of MoPh11_S86_L001_R1_001.fastq.gz` | `Copy of MoPh11_S86_L001_R2_001.fastq.gz` |
 | `MoPh14` | `Copy of MoPh14_S87_L001_R1_001.fastq.gz` | `Copy of MoPh14_S87_L001_R2_001.fastq.gz` |
 | `MoPh15` | `Copy of MoPh15_S88_L001_R1_001.fastq.gz` | `Copy of MoPh15_S88_L001_R2_001.fastq.gz` |
+
 
 Образец `MoPh7`, разобранный в практике, можно использовать как пример и контроль
 для структуры директорий и команд.
@@ -342,18 +328,18 @@ https://genedev.bionet.nsc.ru/ftp/_RawReads/2025-05-23MyGenetics/
 3. Обрезать адаптеры и низкокачественные хвосты с помощью `cutadapt`.
 4. Сохранить log-файл `cutadapt` в `results/cutadapt/`.
 5. Подготовить директорию `data/juicer/<sample>/fastq/`.
-6. Запустить `Juicer` и получить файл `inter.hic`.
-7. Скопировать итоговую карту в `results/hic/<sample>.inter.hic`.
+6. Запустить `Juicer` и получить файл `inter_30.hic`.
+7. Скопировать итоговую карту в `results/hic/<sample>.inter_30.hic`.
 
 ### Ожидаемый результат
 
 В конце работы пайплайна должны появиться `.hic` файлы для четырех образцов:
 
 ```text
-results/hic/MoPh7.inter.hic
-results/hic/MoPh11.inter.hic
-results/hic/MoPh14.inter.hic
-results/hic/MoPh15.inter.hic
+results/hic/MoPh7.inter_30.hic
+results/hic/MoPh11.inter_30.hic
+results/hic/MoPh14.inter_30.hic
+results/hic/MoPh15.inter_30.hic
 ```
 
 ### Финальный вопрос
@@ -364,4 +350,5 @@ results/hic/MoPh15.inter.hic
 - есть ли крупные перестройки;
 - на каких хромосомах они заметны;
 - какие дополнительные проверки нужны, чтобы убедиться, что это не артефакт
-  покрытия, качества ридов или выравнивания.
+покрытия, качества ридов или выравнивания.
+
