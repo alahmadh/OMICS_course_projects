@@ -61,7 +61,7 @@ java -version
 ```bash
 mkdir -p data/raw data/trimmed data/reference data/juicer
 mkdir -p results/fastqc_raw results/cutadapt results/hic
-mkdir -p tools
+mkdir -p scripts tools
 ```
 
 ## Шаг 1. Референсный геном
@@ -81,15 +81,23 @@ wget -O data/reference/T2T_human.fna.gz \
   https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/914/755/GCF_009914755.1_T2T-CHM13v2.0/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna.gz
 
 gzip -dkf data/reference/T2T_human.fna.gz
+
+python3 scripts/rename_chroms_t2t.py
 ```
 
 Проверим, что появились оба файла:
 
 ```bash
 ls -lh data/reference/T2T_human.fna.gz data/reference/T2T_human.fna
+head data/reference/T2T_human.rename_chroms.tsv
+grep "^>" data/reference/T2T_human.fna | head
 ```
 
-Индексируем распакованный FASTA:
+Скрипт переименовывает записи FASTA из NCBI-формата в формат `chr*`, например
+`chr1`, `chr2`, `chrX`, `chrM`. Таблица соответствия старых и новых названий
+сохраняется в `data/reference/T2T_human.rename_chroms.tsv`.
+
+Индексируем FASTA с переименованными хромосомами:
 
 ```bash
 bwa index data/reference/T2T_human.fna
