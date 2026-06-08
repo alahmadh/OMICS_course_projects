@@ -1,13 +1,11 @@
 # Large raw data
 data/
-results/
 
 # Sequencing files
 *.fastq.gz
 *.fq.gz
 
 # Hi-C outputs
-*.hic
 *.sam
 *.bam
 *.gz
